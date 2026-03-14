@@ -5,8 +5,8 @@ import ProductCard from '@/components/ProductCard';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CheckoutModal from '@/components/CheckoutModal';
-
-const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxooB4SU0-JBXd-0EBAhp6jonWidCuf0t5QNGqWkLVHzZth2VpdUk7fZ5nIPXl2XGu5lg/exec';
+import { databases, DATABASE_ID, COLLECTION_ID } from '@/lib/appwrite';
+import { Client } from 'appwrite';
 
 const sampleProducts: any[] = [];
 
@@ -16,27 +16,43 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const response = await fetch(SHEETS_API_URL);
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setDynamicProducts(data);
-        }
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        // Fallback to localStorage if any
-        const saved = localStorage.getItem('easy_shop_products');
-        if (saved) {
-          setDynamicProducts(JSON.parse(saved));
-        }
-      } finally {
-        setIsLoading(false);
-      }
+  const fetchProducts = async () => {
+    try {
+      const response = await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
+      const products = response.documents.map(doc => ({
+        id: doc.$id,
+        name: doc.name,
+        price: doc.price,
+        description: doc.description,
+        rating: doc.rating,
+        image: doc.image,
+        images: doc.images || [doc.image]
+      }));
+      setDynamicProducts(products);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  useEffect(() => {
     fetchProducts();
+
+    // Appwrite Real-time Setup
+    const client = new Client()
+      .setEndpoint('https://cloud.appwrite.io/v1')
+      .setProject('697121c70024e4e94ac3');
+
+    const unsubscribe = client.subscribe(
+      `databases.${DATABASE_ID}.collections.${COLLECTION_ID}.documents`,
+      (response) => {
+        // Refresh products list on any change (create, update, delete)
+        fetchProducts();
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const allProducts = [...sampleProducts, ...dynamicProducts];
@@ -48,6 +64,8 @@ export default function Home() {
 
   return (
     <main className="bg-[#111111] min-h-screen selection:bg-[#a855f7] selection:text-white">
+      <Navbar />
+
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden px-6">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#a855f7]/10 rounded-full blur-[120px] animate-pulse" />
@@ -95,18 +113,28 @@ export default function Home() {
               <p className="text-white/40 font-bold uppercase tracking-[0.3em] animate-pulse">Fetching Masterpieces...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {allProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  {...product}
-                  onSelect={() => openModal(product)}
-                />
-              ))}
-            </div>
+            <>
+              {allProducts.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-white/20 text-xl font-light italic">The collection is currently empty. Visit the admin panel to add masterpieces.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {allProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      {...product}
+                      onSelect={() => openModal(product)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
+
+      <Footer />
 
       {/* Checkout Modal */}
       {selectedProduct && (
