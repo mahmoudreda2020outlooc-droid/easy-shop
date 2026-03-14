@@ -131,10 +131,31 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="card-bg neon-border-purple px-8 py-5 rounded-3xl flex items-center gap-5 glass-morphism-premium artistic-shadow">
-                        <div className="w-12 h-12 rounded-full bg-[#eab308]/20 flex items-center justify-center neon-border-gold">
-                            <svg className="w-6 h-6 text-[#eab308]" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                            </svg>
+                        <div className="w-12 h-12 rounded-full bg-[#ef4444]/20 flex items-center justify-center border border-red-500/30">
+                            <button
+                                onClick={async () => {
+                                    if (confirm('🚨 هل أنت متأكد من مسح جميع المنتجات؟')) {
+                                        setLoading(true);
+                                        try {
+                                            await fetch(SHEETS_API_URL, {
+                                                method: 'POST',
+                                                mode: 'no-cors',
+                                                body: JSON.stringify({ action: 'clear' }),
+                                            });
+                                            localStorage.removeItem('easy_shop_products');
+                                            alert('✅ تم إرسال طلب المسح. تأكد من تحديث صفحة الموقع.');
+                                            window.location.reload();
+                                        } catch (e) {
+                                            alert('خطأ في الاتصال');
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }
+                                }}
+                                className="text-red-500 font-bold text-xs"
+                            >
+                                مسح الكل
+                            </button>
                         </div>
                         <div>
                             <div className="text-white font-bold text-lg">Admin User</div>
