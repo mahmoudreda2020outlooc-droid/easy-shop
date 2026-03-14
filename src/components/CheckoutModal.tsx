@@ -29,7 +29,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
     });
 
     // Ensure we have an array of images for the gallery
-    const productImages = product.images && product.images.length > 0
+    const productImages = Array.isArray(product.images) && product.images.length > 0
         ? product.images
         : [product.image];
 
