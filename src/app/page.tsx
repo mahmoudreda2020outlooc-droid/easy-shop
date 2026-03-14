@@ -8,16 +8,7 @@ import CheckoutModal from '@/components/CheckoutModal';
 
 const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxooB4SU0-JBXd-0EBAhp6jonWidCuf0t5QNGqWkLVHzZth2VpdUk7fZ5nIPXl2XGu5lg/exec';
 
-const sampleProducts = [
-  { id: '1', name: 'Elite Chronograph X', price: 1250, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop', isGold: true, rating: 5 },
-  { id: '2', name: 'Nova Smart Glasses', price: 499, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?q=80&w=2000&auto=format&fit=crop', isGold: false, rating: 4 },
-  { id: '3', name: 'Aero Ultra Headphones', price: 349, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070&auto=format&fit=crop', isGold: false, rating: 4.5 },
-  { id: '4', name: 'Quantum Peak Camera', price: 2100, image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?q=80&w=2070&auto=format&fit=crop', isGold: true, rating: 5 },
-  { id: '5', name: 'Midnight Speaker S1', price: 180, image: 'https://images.unsplash.com/photo-1589128777073-263566ae5e4d?q=80&w=1974&auto=format&fit=crop', isGold: false, rating: 4 },
-  { id: '6', name: 'Titanium Wallet V2', price: 120, image: 'https://images.unsplash.com/photo-1627123424474-7127cd8d33f3?q=80&w=1974&auto=format&fit=crop', isGold: false, rating: 4.5 },
-  { id: '7', name: 'Solaris Smart Lamp', price: 89, image: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=2070&auto=format&fit=crop', isGold: false, rating: 5 },
-  { id: '8', name: 'Nexus Mechanical Board', price: 299, image: 'https://images.unsplash.com/photo-1587829741301-dc798b83dadc?q=80&w=2037&auto=format&fit=crop', isGold: true, rating: 4 }
-];
+const sampleProducts: any[] = [];
 
 export default function Home() {
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
