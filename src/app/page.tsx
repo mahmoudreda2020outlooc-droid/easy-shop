@@ -6,6 +6,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CheckoutModal from '@/components/CheckoutModal';
 
+const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxooB4SU0-JBXd-0EBAhp6jonWidCuf0t5QNGqWkLVHzZth2VpdUk7fZ5nIPXl2XGu5lg/exec';
+
 const sampleProducts = [
   { id: '1', name: 'Elite Chronograph X', price: 1250, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop', isGold: true, rating: 5 },
   { id: '2', name: 'Nova Smart Glasses', price: 499, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?q=80&w=2000&auto=format&fit=crop', isGold: false, rating: 4 },
@@ -21,12 +23,29 @@ export default function Home() {
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('easy_shop_products');
-    if (saved) {
-      setDynamicProducts(JSON.parse(saved));
+    async function fetchProducts() {
+      try {
+        const response = await fetch(SHEETS_API_URL);
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setDynamicProducts(data);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        // Fallback to localStorage if any
+        const saved = localStorage.getItem('easy_shop_products');
+        if (saved) {
+          setDynamicProducts(JSON.parse(saved));
+        }
+      } finally {
+        setIsLoading(false);
+      }
     }
+
+    fetchProducts();
   }, []);
 
   const allProducts = [...sampleProducts, ...dynamicProducts];
@@ -68,6 +87,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+
       {/* Products Grid */}
       <section id="products" className="py-32 px-6 lg:px-12 bg-[#0a0a0a]">
         <div className="max-w-[1400px] mx-auto">
@@ -78,15 +98,22 @@ export default function Home() {
             <div className="h-1 w-32 bg-gradient-to-r from-[#eab308] to-[#a855f7] rounded-full" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {allProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                onSelect={() => openModal(product)}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-16 h-16 border-4 border-[#a855f7] border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_20px_rgba(168,85,247,0.5)]"></div>
+              <p className="text-white/40 font-bold uppercase tracking-[0.3em] animate-pulse">Fetching Masterpieces...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {allProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  {...product}
+                  onSelect={() => openModal(product)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

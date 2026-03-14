@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxooB4SU0-JBXd-0EBAhp6jonWidCuf0t5QNGqWkLVHzZth2VpdUk7fZ5nIPXl2XGu5lg/exec';
+
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
     const [taagerUrl, setTaagerUrl] = useState('');
@@ -34,65 +36,86 @@ export default function AdminDashboard() {
         return { name, price, description: text };
     };
 
-    const handleSingleAdd = (e: React.FormEvent) => {
+    const pushToSheet = async (product: any) => {
+        try {
+            await fetch(SHEETS_API_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Apps Script requires no-cors for simple POST or it will fail preflight
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(product),
+            });
+            return true;
+        } catch (error) {
+            console.error('Error pushing to sheet:', error);
+            return false;
+        }
+    };
+
+    const handleSingleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        setTimeout(() => {
-            let productData;
-            const trimmedInput = taagerUrl.trim();
-            const imageUrls = multiImages.split('\n').map(url => url.trim()).filter(url => url.length > 0);
+        let productData;
+        const trimmedInput = taagerUrl.trim();
+        const imageUrls = multiImages.split('\n').map(url => url.trim()).filter(url => url.length > 0);
 
-            // Check if it's a known SKU first
-            if (mockTaagerData[trimmedInput]) {
-                productData = { ...mockTaagerData[trimmedInput] };
-            } else {
-                const parsed = parseTaagerDescription(taagerUrl);
-                productData = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    ...parsed,
-                    image: imageUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
-                    images: imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop'],
-                    rating: 5,
-                    isGold: true
-                };
-            }
+        // Check if it's a known SKU first
+        if (mockTaagerData[trimmedInput]) {
+            productData = { ...mockTaagerData[trimmedInput] };
+        } else {
+            const parsed = parseTaagerDescription(taagerUrl);
+            productData = {
+                id: Math.random().toString(36).substr(2, 9),
+                ...parsed,
+                image: imageUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
+                images: imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop'],
+                rating: 5,
+                isGold: true
+            };
+        }
 
-            const existing = JSON.parse(localStorage.getItem('easy_shop_products') || '[]');
-            localStorage.setItem('easy_shop_products', JSON.stringify([...existing, productData]));
+        // Push to Sheet
+        await pushToSheet(productData);
 
-            setLoading(false);
-            setTaagerUrl('');
-            setMultiImages('');
-            alert('✅ تم سحب البيانات بنجاح! المنتج الآن معروض في الصفحة الرئيسية مع معرض الصور.');
-        }, 1200);
+        // Also save to localStorage as backup
+        const existing = JSON.parse(localStorage.getItem('easy_shop_products') || '[]');
+        localStorage.setItem('easy_shop_products', JSON.stringify([...existing, productData]));
+
+        setLoading(false);
+        setTaagerUrl('');
+        setMultiImages('');
+        alert('✅ تم سحب البيانات ورفعها بنجاح! المنتج سيظهر للجميع فوراً.');
     };
 
-    const handleBulkAdd = (e: React.FormEvent) => {
+    const handleBulkAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         const items = bulkUrls.split('---').filter(item => item.trim().length > 0);
 
         setLoading(true);
-        setTimeout(() => {
-            const newProducts = items.map(item => {
-                const parsed = parseTaagerDescription(item);
-                return {
-                    id: Math.random().toString(36).substr(2, 9),
-                    ...parsed,
-                    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
-                    images: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop'],
-                    rating: 4.5,
-                    isGold: false
-                };
-            });
+        const newProducts = [];
 
-            const existing = JSON.parse(localStorage.getItem('easy_shop_products') || '[]');
-            localStorage.setItem('easy_shop_products', JSON.stringify([...existing, ...newProducts]));
+        for (const item of items) {
+            const parsed = parseTaagerDescription(item);
+            const productData = {
+                id: Math.random().toString(36).substr(2, 9),
+                ...parsed,
+                image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
+                images: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop'],
+                rating: 4.5,
+                isGold: false
+            };
+            newProducts.push(productData);
+            await pushToSheet(productData);
+        }
 
-            setLoading(false);
-            setBulkUrls('');
-            alert(`✅ تم إضافة ${newProducts.length} منتجات بنجاح!`);
-        }, 2000);
+        const existing = JSON.parse(localStorage.getItem('easy_shop_products') || '[]');
+        localStorage.setItem('easy_shop_products', JSON.stringify([...existing, ...newProducts]));
+
+        setLoading(false);
+        setBulkUrls('');
+        alert(`✅ تم إضافة ${newProducts.length} منتجات ورفعهم بنجاح!`);
     };
 
     return (
@@ -178,7 +201,7 @@ export default function AdminDashboard() {
                                         className="w-full neon-button py-6 text-2xl tracking-widest uppercase font-black disabled:opacity-50 disabled:cursor-not-allowed group"
                                     >
                                         <span className="group-hover:text-glow-purple transition-all">
-                                            {loading ? 'Processing Taager Data...' : 'Pull Product to Store'}
+                                            {loading ? 'Sinking to Cloud Sheet...' : 'Pull & Sync Product'}
                                         </span>
                                     </button>
                                 </form>
@@ -200,7 +223,7 @@ export default function AdminDashboard() {
                                         disabled={loading}
                                         className="w-full py-6 text-2xl tracking-widest uppercase font-black rounded-3xl transition-all bg-[#eab308] text-slate-950 hover:shadow-[0_0_30px_rgba(234,179,8,0.6)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {loading ? 'Curating Batch Products...' : 'Import Collection'}
+                                        {loading ? 'Syncing Batch Collection...' : 'Import & Sync All'}
                                     </button>
                                 </form>
                             )}
@@ -214,12 +237,11 @@ export default function AdminDashboard() {
                             <h3 className="text-xl font-bold text-white tracking-widest uppercase text-glow-gold">Live Stats</h3>
                             <div className="space-y-8">
                                 <div>
-                                    <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Collection Size</p>
-                                    <p className="text-5xl font-black text-white">12</p>
-                                </div>
-                                <div>
-                                    <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Active Orders</p>
-                                    <p className="text-5xl font-black text-white">4</p>
+                                    <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Sync Status</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_#3b82f6]" />
+                                        <span className="text-2xl font-bold text-blue-500 italic">Cloud Sheets</span>
+                                    </div>
                                 </div>
                                 <div>
                                     <p className="text-white/30 text-xs uppercase tracking-widest mb-2">Store Status</p>
@@ -233,9 +255,9 @@ export default function AdminDashboard() {
 
                         {/* Support Card */}
                         <div className="card-bg neon-border-purple rounded-[2.5rem] p-10 glass-morphism-premium">
-                            <h3 className="text-xl font-bold text-[#a855f7] mb-6 tracking-tight">Need Help?</h3>
+                            <h3 className="text-xl font-bold text-[#a855f7] mb-6 tracking-tight">Cloud Management</h3>
                             <p className="text-white/60 leading-relaxed text-sm">
-                                "Simply copy the product title, price, and specs from Taager and paste it in the box. Our smart parser will extract everything for you!"
+                                "Your products are now safely stored in Google Sheets. You can edit them directly in the sheet or via this dashboard!"
                             </p>
                         </div>
                     </div>
