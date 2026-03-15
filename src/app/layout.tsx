@@ -6,6 +6,9 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "Easy Shop | Premium Store",
   description: "Your one-stop shop for premium products curated from Taager.",
+  icons: {
+    icon: '/icon.png',
+  },
 };
 
 export default function RootLayout({
