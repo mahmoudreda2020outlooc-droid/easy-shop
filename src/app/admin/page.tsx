@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { login, logout, checkAuth } from '../actions/auth';
 import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction, getProducts, updateProduct } from '../actions/products';
-import { storage, BUCKET_ID, ID, client } from '@/lib/appwrite';
+import { storage, BUCKET_ID, ID, client, databases, DATABASE_ID, COLLECTION_ID } from '@/lib/appwrite';
+import { revalidatePath } from 'next/cache';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [showRepairGuide, setShowRepairGuide] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [password, setPassword] = useState('');
 
@@ -566,13 +568,77 @@ export default function AdminDashboard() {
                                 </div>
                             )}
 
-                            <button
-                                disabled={loading || !manualProduct.name || !manualProduct.price}
-                                className="w-full py-6 text-2xl tracking-widest uppercase font-black rounded-3xl transition-all bg-[#3b82f6] text-white hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? 'Adding Masterpiece...' : 'Add Product to Store'}
-                            </button>
+                            <div className="flex gap-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading || !manualProduct.name || !manualProduct.price}
+                                    className={`flex-1 py-6 rounded-3xl text-xl font-black transition-all ${loading ? 'bg-white/10 text-white/20 cursor-not-allowed' : 'bg-[#eab308] text-black hover:bg-[#facc15] active:scale-95 shadow-[0_0_40px_rgba(234,179,8,0.3)]'}`}
+                                >
+                                    {loading ? (
+                                        <div className="flex items-center justify-center gap-4">
+                                            <div className="w-6 h-6 border-4 border-black/30 border-t-black rounded-full animate-spin"></div>
+                                            <span>جاري التنفيذ...</span>
+                                        </div>
+                                    ) : (
+                                        editingId ? 'حفظ التغييرات 💾' : 'إضافة المنتج 🚀'
+                                    )}
+                                </button>
+                                {editingId && (
+                                    <button
+                                        type="button"
+                                        onClick={handleCancelEdit}
+                                        className="px-8 py-6 rounded-3xl bg-white/5 text-white/60 font-bold hover:bg-white/10 transition-all border border-white/10"
+                                    >
+                                        إلغاء التعديل
+                                    </button>
+                                )}
+                            </div>
                         </form>
+                    </div>
+
+                    {/* Product List Section */}
+                    <div className="card-bg rounded-3xl md:rounded-[2.5rem] p-5 md:p-10 lg:p-14 transition-all neon-border-purple glass-morphism-premium artistic-shadow">
+                        <div className="flex justify-between items-center mb-10">
+                            <h2 className="text-2xl font-bold text-white flex items-center gap-4">
+                                <span className="w-1.5 h-8 rounded-full bg-[#a855f7] shadow-[0_0_15px_#a855f7]" />
+                                Existing Masterpieces
+                            </h2>
+                            <span className="text-white/20 font-mono text-sm">{products.length} Products</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {products.length === 0 ? (
+                                <div className="col-span-full py-20 text-center text-white/10 border-2 border-dashed border-white/5 rounded-[2rem]">
+                                    No products found in the store.
+                                </div>
+                            ) : products.map((product: any) => (
+                                <div key={product.id} className="group relative bg-black/40 border border-white/5 rounded-3xl overflow-hidden hover:border-[#a855f7]/30 transition-all p-4">
+                                    <div className="flex gap-4 items-center">
+                                        <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-white/5">
+                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-white font-bold truncate">{product.name}</h3>
+                                            <p className="text-[#eab308] font-black">${product.price}</p>
+                                            <div className="flex gap-2 mt-3">
+                                                <button
+                                                    onClick={() => handleEditProduct(product)}
+                                                    className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-500/20 transition-all"
+                                                >
+                                                    تعديل 📝
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(product.id)}
+                                                    className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500/20 transition-all"
+                                                >
+                                                    حذف 🗑️
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
