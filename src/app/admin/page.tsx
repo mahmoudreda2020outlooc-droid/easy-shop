@@ -132,12 +132,18 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
-                            <span className="text-xs text-white/20 ml-2">v4.0</span>
+                            <span className="text-xs text-white/20 ml-2">v5.0</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            onClick={handleRunDiagnostics}
+                            className="px-4 py-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-bold hover:bg-blue-500/20 transition-all"
+                        >
+                            فحص الإعدادات 🔍
+                        </button>
                         <button
                             onClick={() => window.open('/', '_blank')}
                             className="card-bg neon-border-purple px-4 py-2.5 rounded-2xl text-white text-sm font-bold hover:bg-white/5 transition-all"
