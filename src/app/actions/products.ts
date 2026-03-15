@@ -89,3 +89,27 @@ export async function getProducts() {
         return { success: false, products: [] };
     }
 }
+
+export async function testConnectionAction() {
+    const report = {
+        endpoint: !!process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || !!process.env.APPWRITE_ENDPOINT,
+        projectId: !!process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || !!process.env.APPWRITE_PROJECT_ID,
+        databaseId: !!process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || !!process.env.APPWRITE_DATABASE_ID,
+        collectionId: !!process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID || !!process.env.APPWRITE_COLLECTION_ID,
+        bucketId: !!process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID || !!process.env.APPWRITE_BUCKET_ID,
+        adminPassword: !!process.env.ADMIN_PASSWORD,
+    };
+
+    try {
+        // Try to list buckets as a sanity check for connection
+        await storage.listBuckets();
+        return { success: true, report, message: 'All systems operational on server!' };
+    } catch (error: any) {
+        return {
+            success: false,
+            report,
+            error: error.message,
+            tip: 'If variables are "false", they are missing in Vercel Dash. If true and still failing, check Appwrite Permissions (API keys or Any->Create)'
+        };
+    }
+}
