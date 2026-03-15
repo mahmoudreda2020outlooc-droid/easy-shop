@@ -6,6 +6,9 @@ import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction,
 import { storage, BUCKET_ID, ID, client, databases, DATABASE_ID, COLLECTION_ID } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
+    const [loading, setLoading] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [showRepairGuide, setShowRepairGuide] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [password, setPassword] = useState('');
     const [taagerKey, setTaagerKey] = useState('');
