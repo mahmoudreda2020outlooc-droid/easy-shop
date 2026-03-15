@@ -49,7 +49,11 @@ export async function addProduct(product: any, uploadedImageUrls: string[]) {
             }
         );
 
-        revalidatePath('/');
+        try {
+            revalidatePath('/');
+        } catch (e) {
+            console.warn('Revalidation failed, but product was added.');
+        }
         return { success: true, timestamp: Date.now() };
     } catch (error: any) {
         console.error('Error adding product:', error);
