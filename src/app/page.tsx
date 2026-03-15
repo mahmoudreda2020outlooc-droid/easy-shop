@@ -5,8 +5,7 @@ import ProductCard from '@/components/ProductCard';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CheckoutModal from '@/components/CheckoutModal';
-import { databases, DATABASE_ID, COLLECTION_ID } from '@/lib/appwrite';
-import { Client } from 'appwrite';
+import { getProducts } from './actions/products';
 
 const sampleProducts: any[] = [];
 
@@ -16,19 +15,12 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProducts = async () => {
+  const fetchProductsData = async () => {
     try {
-      const response = await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
-      const products = response.documents.map(doc => ({
-        id: doc.$id,
-        name: doc.name,
-        price: doc.price,
-        description: doc.description,
-        rating: doc.rating,
-        image: doc.image,
-        images: doc.images || [doc.image]
-      }));
-      setDynamicProducts(products);
+      const result = await getProducts();
+      if (result.success) {
+        setDynamicProducts(result.products || []);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -37,22 +29,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchProducts();
-
-    // Appwrite Real-time Setup
-    const client = new Client()
-      .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject('697121c70024e4e94ac3');
-
-    const unsubscribe = client.subscribe(
-      `databases.${DATABASE_ID}.collections.${COLLECTION_ID}.documents`,
-      (response) => {
-        // Refresh products list on any change (create, update, delete)
-        fetchProducts();
-      }
-    );
-
-    return () => unsubscribe();
+    fetchProductsData();
   }, []);
 
   const allProducts = [...sampleProducts, ...dynamicProducts];
