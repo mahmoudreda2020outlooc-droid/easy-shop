@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { databases, storage, client, DATABASE_ID, COLLECTION_ID, BUCKET_ID, ID } from '@/lib/appwrite';
+import { useEffect, useState } from 'react';
+import { login, logout, checkAuth } from '../actions/auth';
+import { addProduct, deleteAllProducts } from '../actions/products';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
@@ -18,59 +19,29 @@ export default function AdminDashboard() {
         images: [] as (string | File)[]
     });
 
-    const pushToAppwrite = async (product: any) => {
-        try {
-            const uploadedImageUrls: string[] = [];
+    useEffect(() => {
+        const verifyAuth = async () => {
+            const authenticated = await checkAuth();
+            setIsAdmin(authenticated);
+        };
+        verifyAuth();
+    }, []);
 
-            // 1. Upload files to Appwrite Storage first
-            for (const img of manualProduct.images) {
-                if (img instanceof File) {
-                    const file = await storage.createFile(
-                        BUCKET_ID,
-                        ID.unique(),
-                        img
-                    );
-                    // Generate public URL
-                    const url = `${client.config.endpoint}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${client.config.project}`;
-                    uploadedImageUrls.push(url);
-                } else {
-                    // It's already a URL
-                    uploadedImageUrls.push(img);
-                }
-            }
-
-            // 2. Create document with the URLs
-            await databases.createDocument(
-                DATABASE_ID,
-                COLLECTION_ID,
-                ID.unique(),
-                {
-                    name: product.name,
-                    price: product.price,
-                    description: product.description,
-                    rating: product.rating,
-                    image: uploadedImageUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
-                    images: uploadedImageUrls.length > 0 ? uploadedImageUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
-                }
-            );
-            return { success: true };
-        } catch (error: any) {
-            console.error('Error pushing to Appwrite:', error);
-            let userMessage = error.message || 'Unknown error';
-
-            if (error.code === 404 && userMessage.includes('bucket')) {
-                userMessage = '⚠️ نظام التخزين (Bucket) غير موجود. تم فتح "دليل الإصلاح" بالأسفل.';
-                setShowRepairGuide(true);
-            } else if (error.code === 401 || error.code === 403) {
-                userMessage = '⚠️ مشكلة في الصلاحيات. يرجى تفعيل Permissions الـ Create لكل من الـ Database والـ Storage.';
-            }
-
-            return {
-                success: false,
-                message: userMessage,
-                code: error.code
-            };
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        const result = await login(password);
+        if (result.success) {
+            setIsAdmin(true);
+        } else {
+            alert('❌ رمز الدخول غير صحيح!');
         }
+        setLoading(false);
+    };
+
+    const handleLogout = async () => {
+        await logout();
+        setIsAdmin(false);
     };
 
     if (!isAdmin) {
@@ -86,14 +57,7 @@ export default function AdminDashboard() {
                     <p className="text-white/40 mb-8 text-sm">Please enter your authorization code to proceed.</p>
 
                     <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            if (password === '112233') {
-                                setIsAdmin(true);
-                            } else {
-                                alert('❌ رمز الدخول غير صحيح!');
-                            }
-                        }}
+                        onSubmit={handleLogin}
                         className="space-y-4"
                     >
                         <input
@@ -104,8 +68,11 @@ export default function AdminDashboard() {
                             className="w-full search-input rounded-2xl px-6 py-5 text-center text-2xl tracking-[0.5em] font-black text-white/90 placeholder-white/10 focus:ring-2 focus:ring-[#a855f7]/50"
                             autoFocus
                         />
-                        <button className="w-full py-5 bg-[#a855f7] text-white rounded-2xl font-black hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all active:scale-95">
-                            Authorize Access
+                        <button
+                            disabled={loading}
+                            className="w-full py-5 bg-[#a855f7] text-white rounded-2xl font-black hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            {loading ? 'Authenticating...' : 'Authorize Access'}
                         </button>
                     </form>
                 </div>
@@ -140,10 +107,7 @@ export default function AdminDashboard() {
                                         if (confirm('🚨 هل أنت متأكد من مسح جميع المنتجات؟')) {
                                             setLoading(true);
                                             try {
-                                                const docs = await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
-                                                for (const doc of docs.documents) {
-                                                    await databases.deleteDocument(DATABASE_ID, COLLECTION_ID, doc.$id);
-                                                }
+                                                await deleteAllProducts();
                                                 localStorage.removeItem('easy_shop_products');
                                                 alert('✅ تم مسح جميع المنتجات بنجاح!');
                                                 window.location.reload();
@@ -159,6 +123,15 @@ export default function AdminDashboard() {
                                     مسح الكل
                                 </button>
                             </div>
+                            <button
+                                onClick={handleLogout}
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                                title="خروج"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                            </button>
                             <div>
                                 <div className="text-white font-bold text-lg">Admin User</div>
                                 <div className="text-[10px] text-[#a855f7] uppercase tracking-[0.3em] font-black">Verified Store</div>
@@ -187,17 +160,17 @@ export default function AdminDashboard() {
                                 images: manualProduct.images.length > 0 ? manualProduct.images : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
                             };
 
-                            const result = await pushToAppwrite(productData);
+                            const result = await addProduct(productData, manualProduct.images);
 
                             if (result.success) {
                                 // Clear localStorage old data if any
                                 localStorage.removeItem('easy_shop_products');
                                 setLoading(false);
                                 setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                alert('✅ تم إضافة المنتج إلى Appwrite بنجاح!');
+                                alert('✅ تم إضافة المنتج بنجاح!');
                             } else {
                                 setLoading(false);
-                                alert(`❌ فشل في إضافة المنتج.\nالسبب: ${result.message}\nالكود: ${result.code}\n\nتأكد من تفعيل صلاحيات الـ Create للكل (Any) في إعدادات الـ Collection.`);
+                                alert(`❌ فشل في إضافة المنتج.`);
                             }
                         }} className="space-y-10">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -369,14 +342,15 @@ export default function AdminDashboard() {
 
                                     <div className="space-y-4">
                                         <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
-                                            <p className="text-[#a855f7] font-bold mb-2">الخطوة 1: افتح الرابط التالي</p>
+                                            <p className="text-[#a855f7] font-bold mb-2">الخطوة 1: افتح لوحة تحكم Appwrite</p>
+                                            <p className="text-white/40 text-sm mb-2">ادخل على مشروعك في Appwrite وروح لـ Storage.</p>
                                             <a
-                                                href={`https://cloud.appwrite.io/console/project-${client.config.project}/storage`}
+                                                href="https://cloud.appwrite.io/console"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-400 hover:text-blue-300 break-all text-sm underline font-mono"
                                             >
-                                                https://cloud.appwrite.io/console/project-{client.config.project}/storage
+                                                https://cloud.appwrite.io/console
                                             </a>
                                         </div>
 
