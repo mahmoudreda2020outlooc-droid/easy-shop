@@ -2,14 +2,14 @@
 
 import { addProduct } from './products';
 
-// The discovered endpoint for Taager External API (via easy-orders)
-const TAAGER_API_BASE = 'https://api.easy-orders.net/api/v1/external-apps';
+// The official endpoint for Taager native API
+const TAAGER_API_BASE = 'https://taager.com/api/external/v1';
 
 export async function fetchTaagerProducts(apiKey: string) {
     try {
         const response = await fetch(`${TAAGER_API_BASE}/products`, {
             headers: {
-                'Api-Key': apiKey,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             }
         });
