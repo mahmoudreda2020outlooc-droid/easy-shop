@@ -19,15 +19,7 @@ export default function Navbar() {
 
                 {/* User Actions */}
                 <div className="flex items-center gap-6">
-                    <Link href="/cart" className="relative flex items-center text-white/80 hover:text-white transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
-                        {/* Neon Purple Badge */}
-                        <span className="absolute -top-2 -right-2 bg-[#a855f7] rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white shadow-[0_0_10px_rgba(168,85,247,0.8)] border-2 border-[#111111]">
-                            11
-                        </span>
-                    </Link>
+                    {/* User Actions removed */}
                 </div>
             </div>
 
