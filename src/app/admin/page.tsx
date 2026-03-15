@@ -154,19 +154,39 @@ export default function AdminDashboard() {
                             };
 
                             try {
-                                const result = await addProduct(productData, manualProduct.images);
+                                const uploadedImageUrls: string[] = [];
+
+                                // 1. Upload images from Client directly to Appwrite
+                                for (let i = 0; i < manualProduct.images.length; i++) {
+                                    const img = manualProduct.images[i];
+                                    if (img instanceof File) {
+                                        // Update UI or console for progress
+                                        console.log(`Uploading image ${i + 1}/${manualProduct.images.length}...`);
+
+                                        const file = await storage.createFile(
+                                            BUCKET_ID,
+                                            ID.unique(),
+                                            img
+                                        );
+                                        const url = `${client.config.endpoint}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${client.config.project}`;
+                                        uploadedImageUrls.push(url);
+                                    } else {
+                                        uploadedImageUrls.push(img);
+                                    }
+                                }
+
+                                const result = await addProduct(productData, uploadedImageUrls);
 
                                 if (result.success) {
-                                    // Clear localStorage old data if any
                                     localStorage.removeItem('easy_shop_products');
                                     setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                    alert('✅ تم إضافة المنتج بنجاح!');
+                                    alert('✅ تم إضافة المنتج ونشر الصور بنجاح فوري!');
                                 } else {
-                                    alert(`❌ فشل في إضافة المنتج.`);
+                                    alert(`❌ فشل في حفظ بيانات المنتج.`);
                                 }
                             } catch (err) {
                                 console.error('Upload error:', err);
-                                alert('❌ حدث خطأ أثناء الرفع، يرجى المحاولة مرة أخرى.');
+                                alert('❌ حدث خطأ أثناء الرفع المباشر. تأكد من حجم الصور والإنترنت.');
                             } finally {
                                 setLoading(false);
                             }
