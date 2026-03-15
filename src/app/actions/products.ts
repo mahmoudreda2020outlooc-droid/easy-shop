@@ -10,7 +10,6 @@ export async function addProduct(product: any, images: (string | File)[]) {
     }
 
     try {
-        const uploadedImageUrls: string[] = [];
 
         // 1. Upload files to Appwrite Storage in parallel
         const uploadPromises = images.map(async (img) => {

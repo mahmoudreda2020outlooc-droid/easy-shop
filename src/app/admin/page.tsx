@@ -153,17 +153,22 @@ export default function AdminDashboard() {
                                 images: manualProduct.images.length > 0 ? manualProduct.images : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
                             };
 
-                            const result = await addProduct(productData, manualProduct.images);
+                            try {
+                                const result = await addProduct(productData, manualProduct.images);
 
-                            if (result.success) {
-                                // Clear localStorage old data if any
-                                localStorage.removeItem('easy_shop_products');
+                                if (result.success) {
+                                    // Clear localStorage old data if any
+                                    localStorage.removeItem('easy_shop_products');
+                                    setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
+                                    alert('✅ تم إضافة المنتج بنجاح!');
+                                } else {
+                                    alert(`❌ فشل في إضافة المنتج.`);
+                                }
+                            } catch (err) {
+                                console.error('Upload error:', err);
+                                alert('❌ حدث خطأ أثناء الرفع، يرجى المحاولة مرة أخرى.');
+                            } finally {
                                 setLoading(false);
-                                setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                alert('✅ تم إضافة المنتج بنجاح!');
-                            } else {
-                                setLoading(false);
-                                alert(`❌ فشل في إضافة المنتج.`);
                             }
                         }} className="space-y-10">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-8">
