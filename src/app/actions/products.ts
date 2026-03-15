@@ -42,7 +42,7 @@ export async function addProduct(product: any, uploadedImageUrls: string[]) {
             {
                 name: String(product.name),
                 price: Number(product.price),
-                description: String(product.description),
+                description: String(product.description).slice(0, 999),
                 rating: Number(product.rating),
                 image: uploadedImageUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
                 images: uploadedImageUrls.length > 0 ? uploadedImageUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
