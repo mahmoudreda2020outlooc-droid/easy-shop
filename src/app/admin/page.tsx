@@ -165,7 +165,7 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
-                            <span className="text-xs text-white/20 ml-2">v8.0 (Final)</span>
+                            <span className="text-xs text-white/20 ml-2">v9.0 (Ironclad)</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
@@ -289,7 +289,7 @@ export default function AdminDashboard() {
                                     addLog('⭐ PRODUCT ADDED SUCCESSFULLY!');
                                     localStorage.removeItem('easy_shop_products');
                                     setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                    alert('✅ تم إضافة المنتج بنجاح (v7.0)!');
+                                    alert('✅ تم إضافة المنتج بنجاح (v9.0)!');
                                 } else {
                                     const err = result.error || 'Unknown server error';
                                     addLog(`❌ DB FAILED: ${err}`);
