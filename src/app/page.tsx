@@ -111,7 +111,6 @@ export default function Home() {
         </div>
       </section>
 
-      <Footer />
 
       {/* Checkout Modal */}
       {selectedProduct && (
