@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { login, logout, checkAuth } from '../actions/auth';
 import { addProduct, deleteAllProducts } from '../actions/products';
+import { storage, BUCKET_ID, ID, client } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
