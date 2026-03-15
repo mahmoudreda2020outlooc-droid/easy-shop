@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { login, logout, checkAuth } from '../actions/auth';
 import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction, getProducts, updateProduct } from '../actions/products';
 import { storage, BUCKET_ID, ID, client, databases, DATABASE_ID, COLLECTION_ID } from '@/lib/appwrite';
-import { revalidatePath } from 'next/cache';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
@@ -85,7 +84,6 @@ export default function AdminDashboard() {
                 const res = await databases.deleteDocument(DATABASE_ID, COLLECTION_ID, id);
                 addLog('✅ Product deleted.');
                 fetchProducts();
-                revalidatePath('/');
             } catch (e: any) {
                 addLog(`❌ Delete failed: ${e.message}`);
                 alert('فشل الحذف');
