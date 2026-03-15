@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { databases, DATABASE_ID, COLLECTION_ID, ID } from '@/lib/appwrite';
+import { databases, storage, client, DATABASE_ID, COLLECTION_ID, BUCKET_ID, ID } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
@@ -12,11 +12,31 @@ export default function AdminDashboard() {
         price: '',
         description: '',
         rating: '5',
-        images: [] as string[]
+        images: [] as (string | File)[]
     });
 
     const pushToAppwrite = async (product: any) => {
         try {
+            const uploadedImageUrls: string[] = [];
+
+            // 1. Upload files to Appwrite Storage first
+            for (const img of manualProduct.images) {
+                if (img instanceof File) {
+                    const file = await storage.createFile(
+                        BUCKET_ID,
+                        ID.unique(),
+                        img
+                    );
+                    // Generate public URL
+                    const url = `${client.config.endpoint}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${client.config.project}`;
+                    uploadedImageUrls.push(url);
+                } else {
+                    // It's already a URL
+                    uploadedImageUrls.push(img);
+                }
+            }
+
+            // 2. Create document with the URLs
             await databases.createDocument(
                 DATABASE_ID,
                 COLLECTION_ID,
@@ -26,8 +46,8 @@ export default function AdminDashboard() {
                     price: product.price,
                     description: product.description,
                     rating: product.rating,
-                    image: product.image,
-                    images: product.images
+                    image: uploadedImageUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
+                    images: uploadedImageUrls.length > 0 ? uploadedImageUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
                 }
             );
             return { success: true };
@@ -184,38 +204,52 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="space-y-4">
-                                <label className="block text-xs font-black text-[#a855f7] uppercase tracking-[0.2em]">رابط صورة المنتج (أو اعمل Paste مباشرة)</label>
-                                <div className="flex gap-4">
+                                <label className="block text-xs font-black text-[#a855f7] uppercase tracking-[0.2em]">صور المنتج (دقة عالية)</label>
+
+                                <div className="flex flex-wrap gap-4">
                                     <input
-                                        type="text"
-                                        placeholder="ضع رابط الصورة هنا (HTTPS)..."
-                                        className="flex-1 search-input rounded-2xl px-6 py-4 text-white/90 placeholder-white/20"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                const val = (e.currentTarget as HTMLInputElement).value.trim();
-                                                if (val) {
-                                                    setManualProduct(prev => ({ ...prev, images: [...prev.images, val] }));
-                                                    (e.currentTarget as HTMLInputElement).value = '';
-                                                }
-                                            }
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        id="file-upload"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const files = Array.from(e.target.files || []);
+                                            setManualProduct(prev => ({
+                                                ...prev,
+                                                images: [...prev.images, ...files]
+                                            }));
                                         }}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                                            const val = input.value.trim();
-                                            if (val) {
-                                                setManualProduct(prev => ({ ...prev, images: [...prev.images, val] }));
-                                                input.value = '';
-                                            }
-                                        }}
-                                        className="px-6 py-4 bg-[#a855f7] text-white rounded-2xl font-bold hover:opacity-80"
+                                    <label
+                                        htmlFor="file-upload"
+                                        className="px-8 py-5 bg-[#3b82f6] text-white rounded-2xl font-black cursor-pointer hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all flex items-center gap-3 active:scale-95"
                                     >
-                                        Add URL
-                                    </button>
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        رفع صور بدقة عالية
+                                    </label>
+
+                                    <div className="flex-1 min-w-[200px]">
+                                        <input
+                                            type="text"
+                                            placeholder="أو ضع رابط صورة هنا..."
+                                            className="w-full search-input rounded-2xl px-6 py-5 text-white/90 placeholder-white/20"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                    if (val) {
+                                                        setManualProduct(prev => ({ ...prev, images: [...prev.images, val] }));
+                                                        (e.currentTarget as HTMLInputElement).value = '';
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </div>
+
                                 <div
                                     onPaste={async (e) => {
                                         const items = e.clipboardData.items;
@@ -223,59 +257,31 @@ export default function AdminDashboard() {
                                             if (items[i].type.indexOf('image') !== -1) {
                                                 const blob = items[i].getAsFile();
                                                 if (blob) {
-                                                    const reader = new FileReader();
-                                                    reader.onload = async (event) => {
-                                                        const base64 = event.target?.result as string;
-
-                                                        // Super Compression to fit 5000 char limit
-                                                        const compressed = await new Promise<string>((resolve) => {
-                                                            const img = new window.Image();
-                                                            img.src = base64;
-                                                            img.onload = () => {
-                                                                const canvas = document.createElement('canvas');
-                                                                const MAX_SIZE = 150; // Tiny size to guarantee fitting
-                                                                let width = img.width;
-                                                                let height = img.height;
-
-                                                                if (width > MAX_SIZE) {
-                                                                    height = (height * MAX_SIZE) / width;
-                                                                    width = MAX_SIZE;
-                                                                }
-
-                                                                canvas.width = width;
-                                                                canvas.height = height;
-                                                                const ctx = canvas.getContext('2d');
-                                                                ctx?.drawImage(img, 0, 0, width, height);
-                                                                resolve(canvas.toDataURL('image/jpeg', 0.2));
-                                                            };
-                                                        });
-
-                                                        if (compressed.length > 5000) {
-                                                            alert('⚠️ هذه الصورة كبيرة جداً حتى بعد الضغط. يفضل استخدام رابط (URL).');
-                                                        } else {
-                                                            setManualProduct(prev => ({
-                                                                ...prev,
-                                                                images: [...prev.images, compressed]
-                                                            }));
-                                                        }
-                                                    };
-                                                    reader.readAsDataURL(blob);
+                                                    const file = new File([blob], `pasted-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                                                    setManualProduct(prev => ({
+                                                        ...prev,
+                                                        images: [...prev.images, file]
+                                                    }));
                                                 }
                                             }
                                         }
                                     }}
-                                    className="w-full min-h-[150px] border-2 border-dashed border-white/10 rounded-[2rem] flex flex-wrap gap-4 p-6 items-center justify-center hover:border-[#a855f7]/30 transition-colors cursor-pointer group"
+                                    className="w-full min-h-[150px] border-2 border-dashed border-white/10 rounded-[2rem] flex flex-wrap gap-4 p-6 items-center justify-center hover:border-[#3b82f6]/30 transition-colors cursor-pointer group"
                                 >
                                     {manualProduct.images.length === 0 ? (
                                         <div className="text-center">
                                             <p className="text-white/40 text-sm">أو اعمل Paste للصورة هنا مباشرة</p>
-                                            <p className="text-white/10 text-[10px] mt-2 italic">ملاحظة: الصور المباشرة يتم ضغطها بشدة لتناسب السيرفر</p>
+                                            <p className="text-white/10 text-[10px] mt-2 italic">الصور يتم رفعها بجودة كاملة وبدون ضغط</p>
                                         </div>
                                     ) : (
                                         <>
                                             {manualProduct.images.map((img, idx) => (
                                                 <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden group/img">
-                                                    <img src={img} alt="" className="w-full h-full object-cover" />
+                                                    <img
+                                                        src={img instanceof File ? URL.createObjectURL(img) : img}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {
@@ -292,7 +298,7 @@ export default function AdminDashboard() {
                                                 </div>
                                             ))}
                                             <div className="w-24 h-24 border-2 border-dashed border-white/5 rounded-xl flex items-center justify-center text-white/20 text-xs text-center p-2">
-                                                Paste More...
+                                                Paste/Upload More...
                                             </div>
                                         </>
                                     )}
