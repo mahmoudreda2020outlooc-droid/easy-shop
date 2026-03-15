@@ -132,6 +132,7 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
+                            <span className="text-xs text-white/20 ml-2">v3.0</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
@@ -192,19 +193,29 @@ export default function AdminDashboard() {
                             try {
                                 const uploadedUrls: string[] = [];
 
-                                // Sequential upload with compression to ensure success
-                                for (const img of manualProduct.images) {
+                                // Check if environment variables are missing
+                                if (!BUCKET_ID || BUCKET_ID === '') {
+                                    throw new Error('متغيرات البيئة للرفع (Environment Variables) غير موجودة في Vercel. يرجى إضافتها يدوياً.');
+                                }
+
+                                // Direct Client-to-Appwrite Upload (Bypasses Vercel Limits)
+                                for (let i = 0; i < manualProduct.images.length; i++) {
+                                    const img = manualProduct.images[i];
                                     if (img instanceof File) {
                                         // 1. Compress
                                         const optimized = await optimizeImage(img);
-                                        // 2. Upload
-                                        const formData = new FormData();
-                                        formData.append('file', optimized);
-                                        const uploadResult = await uploadImageAction(formData);
-                                        if (uploadResult.success && uploadResult.url) {
-                                            uploadedUrls.push(uploadResult.url);
-                                        } else {
-                                            throw new Error('فشل رفع إحدى الصور');
+                                        // 2. Direct Upload to Appwrite Storage
+                                        try {
+                                            const file = await storage.createFile(
+                                                BUCKET_ID,
+                                                ID.unique(),
+                                                optimized
+                                            );
+                                            const url = `${client.config.endpoint}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${client.config.project}`;
+                                            uploadedUrls.push(url);
+                                        } catch (uploadErr: any) {
+                                            console.error('Appwrite direct upload failed:', uploadErr);
+                                            throw new Error(`فشل الرفع لـ Appwrite: ${uploadErr.message}. تأكد من صلاحيات الـ Bucket (Role: Any -> Create, Read)`);
                                         }
                                     } else {
                                         uploadedUrls.push(img);
@@ -225,13 +236,13 @@ export default function AdminDashboard() {
                                 if (result.success) {
                                     localStorage.removeItem('easy_shop_products');
                                     setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                    alert('✅ تم إضافة المنتج بنجاح!');
+                                    alert('✅ تم إضافة المنتج بنجاح (v3.0)!');
                                 } else {
-                                    alert(`❌ فشل في إضافة المنتج.`);
+                                    alert(`❌ فشل في إضافة المنتج للبيانات.`);
                                 }
                             } catch (err: any) {
-                                console.error('Upload error:', err);
-                                alert('❌ حدث خطأ أثناء الرفع، جرب صوراً بحجم أصغر قليلاً أو تأكد من الإنترنت.');
+                                console.error('Full Error info:', err);
+                                alert(`🚨 خطأ تقني محدد: ${err.message || 'حدث خطأ غير متوقع'}`);
                             } finally {
                                 setLoading(false);
                             }
