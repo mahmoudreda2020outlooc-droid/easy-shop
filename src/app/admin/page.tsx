@@ -329,15 +329,23 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="space-y-4">
-                                <label className="block text-xs font-black text-[#3b82f6] uppercase tracking-[0.2em]">الوصف</label>
+                                <label className="block text-xs font-black text-[#3b82f6] uppercase tracking-[0.2em] flex justify-between">
+                                    <span>الوصف</span>
+                                    <span className={`${manualProduct.description.length > 999 ? 'text-red-500 font-bold' : 'text-white/20'}`}>
+                                        {manualProduct.description.length}/999
+                                    </span>
+                                </label>
                                 <textarea
                                     value={manualProduct.description}
                                     onChange={(e) => setManualProduct({ ...manualProduct, description: e.target.value })}
                                     rows={4}
-                                    className="w-full search-input rounded-2xl px-6 py-4 text-white/90 placeholder-white/20 focus:ring-2 focus:ring-[#3b82f6]/50 custom-scrollbar"
+                                    className={`w-full search-input rounded-2xl px-6 py-4 text-white/90 placeholder-white/20 focus:ring-2 custom-scrollbar ${manualProduct.description.length > 999 ? 'border-red-500/50 ring-red-500/20' : 'focus:ring-[#3b82f6]/50'}`}
                                     placeholder="أدخل مواصفات المنتج..."
                                     required
                                 />
+                                {manualProduct.description.length > 999 && (
+                                    <p className="text-red-400 text-[10px] italic animate-pulse">⚠️ الوصف طويل جداً، سيتم قصه تلقائياً ليناسب قاعدة البيانات.</p>
+                                )}
                             </div>
 
                             <div className="space-y-4">
