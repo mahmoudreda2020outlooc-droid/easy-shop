@@ -45,11 +45,10 @@ export async function importTaagerProductAction(product: any) {
         // Prepare data for addProduct
         const res = await addProduct({
             name: product.name,
-            price: String(product.price),
+            price: Number(product.price),
             description: product.description,
-            rating: product.rating,
-            images: [product.image]
-        });
+            rating: product.rating
+        }, [product.image]);
         return res;
     } catch (error: any) {
         return { success: false, error: error.message };
