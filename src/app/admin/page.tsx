@@ -184,7 +184,38 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="space-y-4">
-                                <label className="block text-xs font-black text-[#a855f7] uppercase tracking-[0.2em]">صور المنتج (اضغط هنا ثم اعمل Paste للصورة)</label>
+                                <label className="block text-xs font-black text-[#a855f7] uppercase tracking-[0.2em]">رابط صورة المنتج (أو اعمل Paste مباشرة)</label>
+                                <div className="flex gap-4">
+                                    <input
+                                        type="text"
+                                        placeholder="ضع رابط الصورة هنا (HTTPS)..."
+                                        className="flex-1 search-input rounded-2xl px-6 py-4 text-white/90 placeholder-white/20"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                if (val) {
+                                                    setManualProduct(prev => ({ ...prev, images: [...prev.images, val] }));
+                                                    (e.currentTarget as HTMLInputElement).value = '';
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                                            const val = input.value.trim();
+                                            if (val) {
+                                                setManualProduct(prev => ({ ...prev, images: [...prev.images, val] }));
+                                                input.value = '';
+                                            }
+                                        }}
+                                        className="px-6 py-4 bg-[#a855f7] text-white rounded-2xl font-bold hover:opacity-80"
+                                    >
+                                        Add URL
+                                    </button>
+                                </div>
                                 <div
                                     onPaste={async (e) => {
                                         const items = e.clipboardData.items;
@@ -196,33 +227,37 @@ export default function AdminDashboard() {
                                                     reader.onload = async (event) => {
                                                         const base64 = event.target?.result as string;
 
-                                                        // Compress image before adding
+                                                        // Super Compression to fit 5000 char limit
                                                         const compressed = await new Promise<string>((resolve) => {
                                                             const img = new window.Image();
                                                             img.src = base64;
                                                             img.onload = () => {
                                                                 const canvas = document.createElement('canvas');
-                                                                const MAX_WIDTH = 400; // Small size to fit Appwrite limits
+                                                                const MAX_SIZE = 150; // Tiny size to guarantee fitting
                                                                 let width = img.width;
                                                                 let height = img.height;
 
-                                                                if (width > MAX_WIDTH) {
-                                                                    height = (height * MAX_WIDTH) / width;
-                                                                    width = MAX_WIDTH;
+                                                                if (width > MAX_SIZE) {
+                                                                    height = (height * MAX_SIZE) / width;
+                                                                    width = MAX_SIZE;
                                                                 }
 
                                                                 canvas.width = width;
                                                                 canvas.height = height;
                                                                 const ctx = canvas.getContext('2d');
                                                                 ctx?.drawImage(img, 0, 0, width, height);
-                                                                resolve(canvas.toDataURL('image/jpeg', 0.5)); // Low quality for max compression
+                                                                resolve(canvas.toDataURL('image/jpeg', 0.2));
                                                             };
                                                         });
 
-                                                        setManualProduct(prev => ({
-                                                            ...prev,
-                                                            images: [...prev.images, compressed]
-                                                        }));
+                                                        if (compressed.length > 5000) {
+                                                            alert('⚠️ هذه الصورة كبيرة جداً حتى بعد الضغط. يفضل استخدام رابط (URL).');
+                                                        } else {
+                                                            setManualProduct(prev => ({
+                                                                ...prev,
+                                                                images: [...prev.images, compressed]
+                                                            }));
+                                                        }
                                                     };
                                                     reader.readAsDataURL(blob);
                                                 }
@@ -233,8 +268,8 @@ export default function AdminDashboard() {
                                 >
                                     {manualProduct.images.length === 0 ? (
                                         <div className="text-center">
-                                            <p className="text-white/40 text-sm">Copy an image and Paste it here (Ctrl+V)</p>
-                                            <p className="text-white/10 text-[10px] mt-2 italic">Works with screenshots, web images, or file copies</p>
+                                            <p className="text-white/40 text-sm">أو اعمل Paste للصورة هنا مباشرة</p>
+                                            <p className="text-white/10 text-[10px] mt-2 italic">ملاحظة: الصور المباشرة يتم ضغطها بشدة لتناسب السيرفر</p>
                                         </div>
                                     ) : (
                                         <>
