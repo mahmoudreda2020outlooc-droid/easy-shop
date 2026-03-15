@@ -81,68 +81,61 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="min-h-screen pt-40 pb-20 px-6 bg-[#111111]">
+        <div className="min-h-screen pt-28 md:pt-40 pb-20 px-4 md:px-6 bg-[#111111]">
             <div className="max-w-4xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+                <div className="flex flex-col gap-6 mb-10 md:mb-16">
                     <div>
-                        <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3 tracking-tighter">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
                         </h1>
-                        <p className="text-white/40 text-lg">Manage your curated product collection.</p>
+                        <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
                         <button
                             onClick={() => window.open('/', '_blank')}
-                            className="card-bg neon-border-purple px-6 py-3 rounded-2xl text-white font-bold hover:bg-white/5 transition-all"
+                            className="card-bg neon-border-purple px-4 py-2.5 rounded-2xl text-white text-sm font-bold hover:bg-white/5 transition-all"
                         >
                             View Store
                         </button>
 
-                        <div className="card-bg neon-border-purple px-8 py-5 rounded-3xl flex items-center gap-5 glass-morphism-premium artistic-shadow">
-                            <div className="w-12 h-12 rounded-full bg-[#ef4444]/20 flex items-center justify-center border border-red-500/30">
-                                <button
-                                    onClick={async () => {
-                                        if (confirm('🚨 هل أنت متأكد من مسح جميع المنتجات؟')) {
-                                            setLoading(true);
-                                            try {
-                                                await deleteAllProducts();
-                                                localStorage.removeItem('easy_shop_products');
-                                                alert('✅ تم مسح جميع المنتجات بنجاح!');
-                                                window.location.reload();
-                                            } catch (e) {
-                                                alert('خطأ في الاتصال أو الصلاحيات');
-                                            } finally {
-                                                setLoading(false);
-                                            }
-                                        }
-                                    }}
-                                    className="text-red-500 font-bold text-xs"
-                                >
-                                    مسح الكل
-                                </button>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-colors"
-                                title="خروج"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                            </button>
-                            <div>
-                                <div className="text-white font-bold text-lg">Admin User</div>
-                                <div className="text-[10px] text-[#a855f7] uppercase tracking-[0.3em] font-black">Verified Store</div>
-                            </div>
-                        </div>
+                        <button
+                            onClick={async () => {
+                                if (confirm('🚨 هل أنت متأكد من مسح جميع المنتجات؟')) {
+                                    setLoading(true);
+                                    try {
+                                        await deleteAllProducts();
+                                        localStorage.removeItem('easy_shop_products');
+                                        alert('✅ تم مسح جميع المنتجات بنجاح!');
+                                        window.location.reload();
+                                    } catch (e) {
+                                        alert('خطأ في الاتصال أو الصلاحيات');
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }
+                            }}
+                            className="px-4 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold hover:bg-red-500/20 transition-all"
+                        >
+                            مسح الكل
+                        </button>
+
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white/50 text-sm font-bold hover:text-white transition-all"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            خروج
+                        </button>
                     </div>
                 </div>
 
                 <div className="space-y-10">
                     {/* Add Product Form */}
-                    <div className="card-bg rounded-[2.5rem] p-10 lg:p-14 transition-all neon-border-purple glass-morphism-premium artistic-shadow">
+                    <div className="card-bg rounded-3xl md:rounded-[2.5rem] p-5 md:p-10 lg:p-14 transition-all neon-border-purple glass-morphism-premium artistic-shadow">
                         <h2 className="text-2xl font-bold text-white mb-10 flex items-center gap-4">
                             <span className="w-1.5 h-8 rounded-full bg-[#3b82f6] shadow-[0_0_15px_#3b82f6]" />
                             Craft Manual Product
@@ -173,7 +166,7 @@ export default function AdminDashboard() {
                                 alert(`❌ فشل في إضافة المنتج.`);
                             }
                         }} className="space-y-10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-8">
                                 <div className="space-y-4">
                                     <label className="block text-xs font-black text-[#3b82f6] uppercase tracking-[0.2em]">اسم المنتج</label>
                                     <input
