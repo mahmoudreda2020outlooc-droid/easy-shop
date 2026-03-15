@@ -7,11 +7,19 @@ import { storage, BUCKET_ID, ID, client } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
+    const [logs, setLogs] = useState<string[]>([]);
+    const addLog = (msg: string) => setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 4)]);
 
     const handleRunDiagnostics = async () => {
         setLoading(true);
+        addLog('Running server diagnostics...');
         try {
             const res = await testConnectionAction();
+            if (res.success) {
+                addLog('✅ Server Connection: OK');
+            } else {
+                addLog(`❌ Server Error: ${res.error}`);
+            }
             const info = `
             Status: ${res.success ? '✅ SUCCESS' : '❌ FAILED'}
             Error: ${res.error || 'None'}
@@ -26,6 +34,7 @@ export default function AdminDashboard() {
             `;
             alert(info);
         } catch (e: any) {
+            addLog(`🚨 Critical: ${e.message}`);
             alert('🚨 خطأ فادح: ' + e.message);
         } finally {
             setLoading(false);
@@ -156,9 +165,15 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
-                            <span className="text-xs text-white/20 ml-2">v6.0</span>
+                            <span className="text-xs text-white/20 ml-2">v7.0 (Live Debug)</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
+                    </div>
+
+                    {/* Live Logs */}
+                    <div className="bg-black/50 border border-white/5 rounded-2xl p-4 font-mono text-[10px] text-green-400/80 space-y-1">
+                        <div className="text-white/20 uppercase text-[8px] mb-2">Live Activity Log</div>
+                        {logs.length === 0 ? <div className="italic text-white/10">Waiting for actions...</div> : logs.map((log, i) => <div key={i} className="animate-in fade-in slide-in-from-left-2">{log}</div>)}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
