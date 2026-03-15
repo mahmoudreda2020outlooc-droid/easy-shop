@@ -221,27 +221,34 @@ export default function AdminDashboard() {
                             setLoading(true);
 
                             try {
+                                addLog(`Starting upload for ${manualProduct.images.length} images...`);
                                 const uploadedUrls: string[] = [];
 
                                 // Sequential upload through Server Action (v4.0 Full Fix)
                                 for (let i = 0; i < manualProduct.images.length; i++) {
                                     const img = manualProduct.images[i];
                                     if (img instanceof File) {
+                                        addLog(`Optimizing image ${i + 1}...`);
                                         const optimized = await optimizeImage(img);
                                         const formData = new FormData();
                                         formData.append('file', optimized);
 
+                                        addLog(`Uploading image ${i + 1} to server...`);
                                         const uploadResult = await uploadImageAction(formData);
                                         if (uploadResult.success && uploadResult.url) {
                                             uploadedUrls.push(uploadResult.url);
+                                            addLog(`✅ Image ${i + 1} uploaded.`);
                                         } else {
-                                            throw new Error(`فشل رفع إحدى الصور. تأكد من إعدادات السيرفر.`);
+                                            const errMsg = uploadResult.error || 'Upload failed';
+                                            addLog(`❌ Image ${i + 1} FAILED: ${errMsg}`);
+                                            throw new Error(errMsg);
                                         }
                                     } else {
                                         uploadedUrls.push(img);
                                     }
                                 }
 
+                                addLog('Finalizing product document in DB...');
                                 const productData = {
                                     name: manualProduct.name,
                                     price: parseInt(manualProduct.price) || 0,
@@ -254,14 +261,17 @@ export default function AdminDashboard() {
                                 const result = await addProduct(productData, uploadedUrls);
 
                                 if (result.success) {
+                                    addLog('⭐ PRODUCT ADDED SUCCESSFULLY!');
                                     localStorage.removeItem('easy_shop_products');
                                     setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                    alert('✅ تم إضافة المنتج بنجاح (v6.0)!');
-                                    // Optional: window.location.reload() if you want to be super safe
+                                    alert('✅ تم إضافة المنتج بنجاح (v7.0)!');
                                 } else {
-                                    alert(`❌ فشل في إضافة المنتج للبيانات: ${result.error || 'خطأ غير معروف'}`);
+                                    const err = result.error || 'Unknown server error';
+                                    addLog(`❌ DB FAILED: ${err}`);
+                                    alert(`❌ فشل في إضافة المنتج للبيانات: ${err}`);
                                 }
                             } catch (err: any) {
+                                addLog(`🚨 ERROR: ${err.message}`);
                                 console.error('Full Error info:', err);
                                 alert(`🚨 خطأ تقني في المتصفح: ${err.message || 'حدث خطأ غير متوقع'}`);
                             } finally {
