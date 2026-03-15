@@ -30,10 +30,14 @@ export default function AdminDashboard() {
                     images: product.images
                 }
             );
-            return true;
-        } catch (error) {
+            return { success: true };
+        } catch (error: any) {
             console.error('Error pushing to Appwrite:', error);
-            return false;
+            return {
+                success: false,
+                message: error.message || 'Unknown error',
+                code: error.code
+            };
         }
     };
 
@@ -111,9 +115,9 @@ export default function AdminDashboard() {
                                 images: manualProduct.images.length > 0 ? manualProduct.images : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
                             };
 
-                            const success = await pushToAppwrite(productData);
+                            const result = await pushToAppwrite(productData);
 
-                            if (success) {
+                            if (result.success) {
                                 // Clear localStorage old data if any
                                 localStorage.removeItem('easy_shop_products');
                                 setLoading(false);
@@ -121,7 +125,7 @@ export default function AdminDashboard() {
                                 alert('✅ تم إضافة المنتج إلى Appwrite بنجاح!');
                             } else {
                                 setLoading(false);
-                                alert('❌ فشل في إضافة المنتج. تأكد من ثبات الصلاحيات في Appwrite.');
+                                alert(`❌ فشل في إضافة المنتج.\nالسبب: ${result.message}\nالكود: ${result.code}\n\nتأكد من تفعيل صلاحيات الـ Create للكل (Any) في إعدادات الـ Collection.`);
                             }
                         }} className="space-y-10">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
