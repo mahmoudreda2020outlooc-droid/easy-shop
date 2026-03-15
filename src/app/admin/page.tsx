@@ -8,8 +8,8 @@ import { storage, BUCKET_ID, ID, client } from '@/lib/appwrite';
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [logs, setLogs] = useState<string[]>([]);
-    const addLog = (msg: string) => setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 4)]);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [password, setPassword] = useState('');
 
     const handleRunDiagnostics = async () => {
         setLoading(true);
@@ -42,6 +42,21 @@ export default function AdminDashboard() {
         }
     };
 
+    const [products, setProducts] = useState<any[]>([]);
+
+    const fetchProducts = async () => {
+        const res = await getProducts();
+        if (res.success) {
+            setProducts(res.products);
+        }
+    };
+
+    useEffect(() => {
+        if (isAdmin) {
+            fetchProducts();
+        }
+    }, [isAdmin]);
+
     const handleEditProduct = (product: any) => {
         setEditingId(product.id);
         setManualProduct({
@@ -52,19 +67,32 @@ export default function AdminDashboard() {
             images: product.images || [product.image]
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        addLogs(`Editing product: ${product.name}`);
+        addLog(`Editing product: ${product.name}`);
     };
 
     const handleCancelEdit = () => {
         setEditingId(null);
         setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-        addLogs('Editing cancelled.');
+        addLog('Editing cancelled.');
     };
 
-    // Manual Form State
-    const [showRepairGuide, setShowRepairGuide] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [password, setPassword] = useState('');
+    const handleDelete = async (id: string) => {
+        if (confirm('🚨 هل أنت متأكد من حذف هذا المنتج؟')) {
+            setLoading(true);
+            try {
+                const res = await databases.deleteDocument(DATABASE_ID, COLLECTION_ID, id);
+                addLog('✅ Product deleted.');
+                fetchProducts();
+                revalidatePath('/');
+            } catch (e: any) {
+                addLog(`❌ Delete failed: ${e.message}`);
+                alert('فشل الحذف');
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     const [manualProduct, setManualProduct] = useState({
         name: '',
         price: '',
@@ -72,6 +100,8 @@ export default function AdminDashboard() {
         rating: '5',
         images: [] as (string | File)[]
     });
+    const [logs, setLogs] = useState<string[]>([]);
+    const addLog = (msg: string) => setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 4)]);
 
     useEffect(() => {
         const verifyAuth = async () => {
@@ -312,6 +342,7 @@ export default function AdminDashboard() {
                                     localStorage.removeItem('easy_shop_products');
                                     setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
                                     setEditingId(null);
+                                    fetchProducts();
                                     alert(editingId ? '✅ تم تحديث المنتج بنجاح!' : '✅ تم إضافة المنتج بنجاح!');
                                 } else {
                                     const err = result.error || 'Unknown server error';
