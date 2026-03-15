@@ -3,13 +3,28 @@
 import { databases, storage, DATABASE_ID, COLLECTION_ID, BUCKET_ID, ID, client } from '@/lib/appwrite';
 import { checkAuth } from './auth';
 
-export async function addProduct(product: any, uploadedImageUrls: string[]) {
+export async function addProduct(product: any, images: (string | File)[]) {
     const isAuthenticated = await checkAuth();
     if (!isAuthenticated) {
         throw new Error('Unauthorized');
     }
 
     try {
+        // 1. Upload files to Appwrite Storage in parallel
+        const uploadPromises = images.map(async (img) => {
+            if (img instanceof File) {
+                const file = await storage.createFile(
+                    BUCKET_ID,
+                    ID.unique(),
+                    img
+                );
+                return `${client.config.endpoint}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${client.config.project}`;
+            } else {
+                return img;
+            }
+        });
+
+        const uploadedImageUrls = await Promise.all(uploadPromises);
 
         // 2. Create document with the URLs
         await databases.createDocument(
