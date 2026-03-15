@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { login, logout, checkAuth } from '../actions/auth';
 import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction, getProducts, updateProduct } from '../actions/products';
+import { fetchTaagerProducts, importTaagerProductAction } from '../actions/taager';
 import { storage, BUCKET_ID, ID, client, databases, DATABASE_ID, COLLECTION_ID } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
@@ -12,7 +13,9 @@ export default function AdminDashboard() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [password, setPassword] = useState('');
     const [taagerKey, setTaagerKey] = useState('');
+    const [taagerProducts, setTaagerProducts] = useState<any[]>([]);
     const [showTaagerSettings, setShowTaagerSettings] = useState(false);
+    const [isFetchingTaager, setIsFetchingTaager] = useState(false);
 
     const handleRunDiagnostics = async () => {
         setLoading(true);
@@ -116,6 +119,46 @@ export default function AdminDashboard() {
         const savedKey = localStorage.getItem('taager_api_key');
         if (savedKey) setTaagerKey(savedKey);
     }, []);
+
+    const handleFetchTaager = async () => {
+        if (!taagerKey) return alert('برجاء إدخال مفتاح الربط أولاً');
+        setIsFetchingTaager(true);
+        addLog('Fetching products from Taager...');
+        try {
+            const res = await fetchTaagerProducts(taagerKey);
+            if (res.success) {
+                setTaagerProducts(res.products);
+                addLog(`✅ Fetched ${res.products?.length} products from Taager.`);
+            } else {
+                addLog(`❌ Fetch failed: ${res.error}`);
+                alert(`فشل جلب المنتجات: ${res.error}`);
+            }
+        } catch (e: any) {
+            addLog(`❌ Taager Error: ${e.message}`);
+        } finally {
+            setIsFetchingTaager(false);
+        }
+    };
+
+    const handleImportTaagerProduct = async (product: any) => {
+        setLoading(true);
+        addLog(`Importing: ${product.name}...`);
+        try {
+            const res = await importTaagerProductAction(product);
+            if (res.success) {
+                addLog(`⭐ Imported successfully!`);
+                alert('✅ تم استيراد المنتج بنجاح!');
+                fetchProducts();
+            } else {
+                addLog(`❌ Import failed: ${res.error}`);
+                alert(`فشل الاستيراد: ${res.error}`);
+            }
+        } catch (e: any) {
+            addLog(`❌ Error: ${e.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -319,7 +362,42 @@ export default function AdminDashboard() {
                                 >
                                     Save Key
                                 </button>
+                                <button
+                                    onClick={handleFetchTaager}
+                                    disabled={isFetchingTaager || !taagerKey}
+                                    className="px-8 py-4 bg-white/5 text-white font-bold rounded-2xl hover:bg-white/10 transition-all active:scale-95 border border-white/10 disabled:opacity-50"
+                                >
+                                    {isFetchingTaager ? 'Fetching...' : 'Fetch Products 🔄'}
+                                </button>
                             </div>
+
+                            {taagerProducts.length > 0 && (
+                                <div className="mt-8 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    <h4 className="text-white/60 text-sm font-bold flex items-center gap-2">
+                                        Available Taager Gems ({taagerProducts.length})
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {taagerProducts.map((p) => (
+                                            <div key={p.id} className="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 items-center group">
+                                                <div className="w-16 h-16 rounded-xl bg-white/5 overflow-hidden flex-shrink-0">
+                                                    <img src={p.image} className="w-full h-full object-cover" alt="" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-white font-bold text-sm truncate">{p.name}</p>
+                                                    <p className="text-[#eab308] font-black">${p.price}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleImportTaagerProduct(p)}
+                                                    className="px-4 py-2 bg-[#eab308] text-black text-[10px] font-black rounded-lg hover:scale-105 transition-all"
+                                                >
+                                                    IMPORT 📥
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <p className="mt-4 text-white/40 text-xs italic">
                                 * المفتاح ده هو المسئول عن سحب المنتجات وأوامر الشحن من منصة تاجر لمتجرك آلياً.
                             </p>
