@@ -101,15 +101,17 @@ export async function testConnectionAction() {
     };
 
     try {
-        // Try to list buckets as a sanity check for connection
-        await storage.listBuckets();
+        // Try to list documents to test connection
+        if (DATABASE_ID && COLLECTION_ID) {
+            await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
+        }
         return { success: true, report, message: 'All systems operational on server!' };
     } catch (error: any) {
         return {
             success: false,
             report,
             error: error.message,
-            tip: 'If variables are "false", they are missing in Vercel Dash. If true and still failing, check Appwrite Permissions (API keys or Any->Create)'
+            tip: 'If variables are "false", they are missing in Vercel Dash. If true and still failing, check Appwrite Permissions (Any -> Create, Read)'
         };
     }
 }

@@ -2,11 +2,35 @@
 
 import { useEffect, useState } from 'react';
 import { login, logout, checkAuth } from '../actions/auth';
-import { addProduct, deleteAllProducts, uploadImageAction } from '../actions/products';
+import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction, getProducts } from '../actions/products';
 import { storage, BUCKET_ID, ID, client } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
+
+    const handleRunDiagnostics = async () => {
+        setLoading(true);
+        try {
+            const res = await testConnectionAction();
+            const info = `
+            Status: ${res.success ? '✅ SUCCESS' : '❌ FAILED'}
+            Error: ${res.error || 'None'}
+            --- Env Variables ---
+            Endpoint: ${res.report.endpoint}
+            Project: ${res.report.projectId}
+            DB: ${res.report.databaseId}
+            Col: ${res.report.collectionId}
+            Bucket: ${res.report.bucketId}
+            ---
+            Tip: ${res.tip || 'Everything looks set on server.'}
+            `;
+            alert(info);
+        } catch (e: any) {
+            alert('🚨 خطأ فادح: ' + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Manual Form State
     const [showRepairGuide, setShowRepairGuide] = useState(false);
