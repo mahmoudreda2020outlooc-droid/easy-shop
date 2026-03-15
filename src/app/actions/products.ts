@@ -50,10 +50,17 @@ export async function addProduct(product: any, uploadedImageUrls: string[]) {
         );
 
         revalidatePath('/');
-        return { success: true };
+        return { success: true, timestamp: Date.now() };
     } catch (error: any) {
         console.error('Error adding product:', error);
-        return { success: false, error: error.message || 'Internal database error' };
+        // Extract exact Appwrite error if possible
+        const errorInfo = error.response?.message || error.message || 'Database error';
+        const errorCode = error.code || 'UNKNOWN';
+        return {
+            success: false,
+            error: `[Code ${errorCode}] ${errorInfo}`,
+            timestamp: Date.now()
+        };
     }
 }
 
