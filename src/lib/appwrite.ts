@@ -8,5 +8,5 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const DATABASE_ID = '6971223f003e5f162359';
 export const COLLECTION_ID = 'easy_shop_products';
-export const BUCKET_ID = 'products'; // User needs to create this bucket
+export const BUCKET_ID = 'product_images'; // Using existing bucket
 export { ID };

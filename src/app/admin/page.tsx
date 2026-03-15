@@ -341,9 +341,8 @@ export default function AdminDashboard() {
                                         <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
                                             <p className="text-[#eab308] font-bold mb-2">الخطوة 2: أنشئ الـ Bucket</p>
                                             <ul className="text-white/70 text-sm space-y-2 list-disc list-inside">
-                                                <li>اضغط على <span className="text-white font-bold">Create Bucket</span></li>
-                                                <li>في الـ ID اكتب بالظبط: <span className="bg-white/10 px-2 py-0.5 rounded font-mono text-white">products</span></li>
-                                                <li>ادخل على <span className="text-white font-bold">Settings</span> بعد الإنشاء</li>
+                                                <li>اضغط على الـ Bucket اللي اسمه <span className="bg-white/10 px-2 py-0.5 rounded font-mono text-white">product_images</span></li>
+                                                <li>ادخل على <span className="text-white font-bold">Settings</span></li>
                                                 <li>عند <span className="text-white font-bold">Permissions</span> ضيف Role باسم <span className="text-white font-bold">Any</span></li>
                                                 <li>فعل <span className="text-white font-bold">Create</span> و <span className="text-white font-bold">Read</span></li>
                                             </ul>
