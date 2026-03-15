@@ -68,3 +68,24 @@ export async function deleteAllProducts() {
         throw error;
     }
 }
+
+export async function getProducts() {
+    try {
+        const response = await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
+        return {
+            success: true,
+            products: response.documents.map(doc => ({
+                id: doc.$id,
+                name: doc.name,
+                price: doc.price,
+                description: doc.description,
+                rating: doc.rating,
+                image: doc.image,
+                images: doc.images || [doc.image]
+            }))
+        };
+    } catch (error: any) {
+        console.error('Error getting products:', error);
+        return { success: false, products: [] };
+    }
+}
