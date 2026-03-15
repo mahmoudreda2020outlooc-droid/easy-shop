@@ -257,7 +257,7 @@ export default function AdminDashboard() {
                                             if (items[i].type.indexOf('image') !== -1) {
                                                 const blob = items[i].getAsFile();
                                                 if (blob) {
-                                                    const file = new File([blob], `pasted-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                                                    const file = new File([blob], `pasted-${Date.now()}.${blob.type.split('/')[1] || 'jpg'}`, { type: blob.type });
                                                     setManualProduct(prev => ({
                                                         ...prev,
                                                         images: [...prev.images, file]
