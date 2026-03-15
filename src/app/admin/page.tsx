@@ -6,9 +6,7 @@ import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction,
 import { storage, BUCKET_ID, ID, client, databases, DATABASE_ID, COLLECTION_ID } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
-    const [loading, setLoading] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [showRepairGuide, setShowRepairGuide] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [password, setPassword] = useState('');
     const [taagerKey, setTaagerKey] = useState('');
     const [showTaagerSettings, setShowTaagerSettings] = useState(false);
@@ -110,6 +108,10 @@ export default function AdminDashboard() {
             setIsAdmin(authenticated);
         };
         verifyAuth();
+
+        // Load Taager Key from local storage
+        const savedKey = localStorage.getItem('taager_api_key');
+        if (savedKey) setTaagerKey(savedKey);
     }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
