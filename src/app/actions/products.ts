@@ -3,51 +3,57 @@
 import { databases, storage, DATABASE_ID, COLLECTION_ID, BUCKET_ID, ID, client } from '@/lib/appwrite';
 import { checkAuth } from './auth';
 
-export async function uploadImageAction(formData: FormData) {
-    const isAuthenticated = await checkAuth();
-    if (!isAuthenticated) throw new Error('Unauthorized');
+import { revalidatePath } from 'next/cache';
 
+export async function uploadImageAction(formData: FormData) {
     try {
-        const file = formData.get('file') as File;
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) return { success: false, error: 'Authorization failed' };
+
+        const file = formData.get('file');
+        if (!file || !(file instanceof File)) {
+            return { success: false, error: 'No valid file provided' };
+        }
+
         const uploadedFile = await storage.createFile(
             BUCKET_ID,
             ID.unique(),
             file
         );
+
         const url = `${client.config.endpoint}/storage/buckets/${BUCKET_ID}/files/${uploadedFile.$id}/view?project=${client.config.project}`;
         return { success: true, url };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Single image upload error:', error);
-        return { success: false, error: 'Failed to upload image' };
+        return { success: false, error: error.message || 'Failed to upload image' };
     }
 }
 
 export async function addProduct(product: any, uploadedImageUrls: string[]) {
-    const isAuthenticated = await checkAuth();
-    if (!isAuthenticated) {
-        throw new Error('Unauthorized');
-    }
-
     try {
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) return { success: false, error: 'Authorization failed' };
+
         // Create document with the URLs
         await databases.createDocument(
             DATABASE_ID,
             COLLECTION_ID,
             ID.unique(),
             {
-                name: product.name,
-                price: product.price,
-                description: product.description,
-                rating: product.rating,
+                name: String(product.name),
+                price: Number(product.price),
+                description: String(product.description),
+                rating: Number(product.rating),
                 image: uploadedImageUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
                 images: uploadedImageUrls.length > 0 ? uploadedImageUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
             }
         );
 
+        revalidatePath('/');
         return { success: true };
     } catch (error: any) {
         console.error('Error adding product:', error);
-        throw error;
+        return { success: false, error: error.message || 'Internal database error' };
     }
 }
 

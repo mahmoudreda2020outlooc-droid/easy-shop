@@ -156,7 +156,7 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
-                            <span className="text-xs text-white/20 ml-2">v5.0</span>
+                            <span className="text-xs text-white/20 ml-2">v6.0</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
@@ -256,13 +256,14 @@ export default function AdminDashboard() {
                                 if (result.success) {
                                     localStorage.removeItem('easy_shop_products');
                                     setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                    alert('✅ تم إضافة المنتج بنجاح (v4.0)!');
+                                    alert('✅ تم إضافة المنتج بنجاح (v6.0)!');
+                                    // Optional: window.location.reload() if you want to be super safe
                                 } else {
-                                    alert(`❌ فشل في إضافة المنتج للبيانات.`);
+                                    alert(`❌ فشل في إضافة المنتج للبيانات: ${result.error || 'خطأ غير معروف'}`);
                                 }
                             } catch (err: any) {
                                 console.error('Full Error info:', err);
-                                alert(`🚨 خطأ تقني: ${err.message || 'حدث خطأ غير متوقع'}`);
+                                alert(`🚨 خطأ تقني في المتصفح: ${err.message || 'حدث خطأ غير متوقع'}`);
                             } finally {
                                 setLoading(false);
                             }
