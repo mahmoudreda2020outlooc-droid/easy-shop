@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { login, logout, checkAuth } from '../actions/auth';
-import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction, getProducts } from '../actions/products';
+import { addProduct, deleteAllProducts, uploadImageAction, testConnectionAction, getProducts, updateProduct } from '../actions/products';
 import { storage, BUCKET_ID, ID, client } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
     const addLog = (msg: string) => setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 4)]);
 
@@ -39,6 +40,25 @@ export default function AdminDashboard() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEditProduct = (product: any) => {
+        setEditingId(product.id);
+        setManualProduct({
+            name: product.name,
+            price: String(product.price),
+            description: product.description,
+            rating: String(product.rating),
+            images: product.images || [product.image]
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        addLogs(`Editing product: ${product.name}`);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
+        addLogs('Editing cancelled.');
     };
 
     // Manual Form State
@@ -165,7 +185,7 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
-                            <span className="text-xs text-white/20 ml-2">v9.0 (Ironclad)</span>
+                            <span className="text-xs text-white/20 ml-2">v10.0 (Edit Power)</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
@@ -283,17 +303,20 @@ export default function AdminDashboard() {
                                     images: uploadedUrls.length > 0 ? uploadedUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
                                 };
 
-                                const result = await addProduct(productData, uploadedUrls);
+                                const result = editingId
+                                    ? await updateProduct(editingId, productData, uploadedUrls)
+                                    : await addProduct(productData, uploadedUrls);
 
                                 if (result.success) {
-                                    addLog('⭐ PRODUCT ADDED SUCCESSFULLY!');
+                                    addLog(editingId ? '⭐ PRODUCT UPDATED!' : '⭐ PRODUCT ADDED SUCCESSFULLY!');
                                     localStorage.removeItem('easy_shop_products');
                                     setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                    alert('✅ تم إضافة المنتج بنجاح (v9.0)!');
+                                    setEditingId(null);
+                                    alert(editingId ? '✅ تم تحديث المنتج بنجاح!' : '✅ تم إضافة المنتج بنجاح!');
                                 } else {
                                     const err = result.error || 'Unknown server error';
-                                    addLog(`❌ DB FAILED: ${err}`);
-                                    alert(`❌ فشل في إضافة المنتج للبيانات: ${err}`);
+                                    addLog(`❌ OP FAILED: ${err}`);
+                                    alert(`❌ فشل العملية: ${err}`);
                                 }
                             } catch (err: any) {
                                 addLog(`🚨 ERROR: ${err.message}`);

@@ -132,3 +132,35 @@ export async function testConnectionAction() {
         };
     }
 }
+export async function updateProduct(productId: string, productData: any, uploadedImageUrls: string[]) {
+    try {
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) return { success: false, error: 'Authorization failed' };
+
+        await databases.updateDocument(
+            DATABASE_ID,
+            COLLECTION_ID,
+            productId,
+            {
+                name: String(productData.name),
+                price: Number(productData.price),
+                description: String(productData.description).slice(0, 999),
+                rating: Number(productData.rating),
+                image: uploadedImageUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
+                images: uploadedImageUrls.length > 0 ? uploadedImageUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
+            }
+        );
+
+        try {
+            revalidatePath('/');
+        } catch (e) {
+            console.warn('Revalidation failed, but product was updated.');
+        }
+
+        return { success: true, timestamp: Date.now() };
+    } catch (error: any) {
+        console.error('Error updating product:', error);
+        const errorInfo = error.response?.message || error.message || 'Update failed';
+        return { success: false, error: errorInfo, timestamp: Date.now() };
+    }
+}
