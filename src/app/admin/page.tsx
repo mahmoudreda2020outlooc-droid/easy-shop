@@ -8,6 +8,8 @@ export default function AdminDashboard() {
 
     // Manual Form State
     const [showRepairGuide, setShowRepairGuide] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [password, setPassword] = useState('');
     const [manualProduct, setManualProduct] = useState({
         name: '',
         price: '',
@@ -70,6 +72,46 @@ export default function AdminDashboard() {
             };
         }
     };
+
+    if (!isAdmin) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#111111] px-6">
+                <div className="max-w-md w-full card-bg neon-border-purple p-10 rounded-[2.5rem] glass-morphism-premium artistic-shadow text-center">
+                    <div className="w-20 h-20 bg-[#a855f7]/20 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-[#a855f7]/30">
+                        <svg className="w-10 h-10 text-[#a855f7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">Admin Access</h2>
+                    <p className="text-white/40 mb-8 text-sm">Please enter your authorization code to proceed.</p>
+
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (password === '112233') {
+                                setIsAdmin(true);
+                            } else {
+                                alert('❌ رمز الدخول غير صحيح!');
+                            }
+                        }}
+                        className="space-y-4"
+                    >
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••"
+                            className="w-full search-input rounded-2xl px-6 py-5 text-center text-2xl tracking-[0.5em] font-black text-white/90 placeholder-white/10 focus:ring-2 focus:ring-[#a855f7]/50"
+                            autoFocus
+                        />
+                        <button className="w-full py-5 bg-[#a855f7] text-white rounded-2xl font-black hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all active:scale-95">
+                            Authorize Access
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen pt-40 pb-20 px-6 bg-[#111111]">
