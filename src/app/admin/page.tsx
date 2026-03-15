@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { login, logout, checkAuth } from '../actions/auth';
-import { addProduct, deleteAllProducts } from '../actions/products';
+import { addProduct, deleteAllProducts, uploadImageAction } from '../actions/products';
 import { storage, BUCKET_ID, ID, client } from '@/lib/appwrite';
 
 export default function AdminDashboard() {
@@ -81,51 +81,6 @@ export default function AdminDashboard() {
         );
     }
 
-    const optimizeImage = (file: File): Promise<File> => {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target?.result as string;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const max_size = 1200; // Max dimension
-
-                    if (width > height) {
-                        if (width > max_size) {
-                            height *= max_size / width;
-                            width = max_size;
-                        }
-                    } else {
-                        if (height > max_size) {
-                            width *= max_size / height;
-                            height = max_size;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
-
-                    canvas.toBlob((blob) => {
-                        if (blob) {
-                            const optimizedFile = new File([blob], file.name, {
-                                type: 'image/jpeg',
-                                lastModified: Date.now(),
-                            });
-                            resolve(optimizedFile);
-                        } else {
-                            resolve(file);
-                        }
-                    }, 'image/jpeg', 0.8);
-                };
-            };
-        });
-    };
 
     return (
         <div className="min-h-screen pt-28 md:pt-40 pb-20 px-4 md:px-6 bg-[#111111]">
@@ -193,26 +148,34 @@ export default function AdminDashboard() {
                             setLoading(true);
 
                             try {
-                                // Optimize images before sending to server
-                                const optimizedImages = await Promise.all(
-                                    manualProduct.images.map(async (img) => {
-                                        if (img instanceof File) {
-                                            return await optimizeImage(img);
+                                const uploadedUrls: string[] = [];
+
+                                // Sequential upload to avoid Vercel body size limits
+                                for (const img of manualProduct.images) {
+                                    if (img instanceof File) {
+                                        const formData = new FormData();
+                                        formData.append('file', img);
+                                        const uploadResult = await uploadImageAction(formData);
+                                        if (uploadResult.success && uploadResult.url) {
+                                            uploadedUrls.push(uploadResult.url);
+                                        } else {
+                                            throw new Error('فشل رفع إحدى الصور');
                                         }
-                                        return img;
-                                    })
-                                );
+                                    } else {
+                                        uploadedUrls.push(img);
+                                    }
+                                }
 
                                 const productData = {
                                     name: manualProduct.name,
                                     price: parseInt(manualProduct.price) || 0,
                                     description: manualProduct.description,
                                     rating: parseFloat(manualProduct.rating) || 5,
-                                    image: optimizedImages[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
-                                    images: optimizedImages.length > 0 ? optimizedImages : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
+                                    image: uploadedUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
+                                    images: uploadedUrls.length > 0 ? uploadedUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
                                 };
 
-                                const result = await addProduct(productData, optimizedImages);
+                                const result = await addProduct(productData, uploadedUrls);
 
                                 if (result.success) {
                                     localStorage.removeItem('easy_shop_products');
