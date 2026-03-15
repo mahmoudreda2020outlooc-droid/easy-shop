@@ -7,6 +7,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
 
     // Manual Form State
+    const [showRepairGuide, setShowRepairGuide] = useState(false);
     const [manualProduct, setManualProduct] = useState({
         name: '',
         price: '',
@@ -53,9 +54,18 @@ export default function AdminDashboard() {
             return { success: true };
         } catch (error: any) {
             console.error('Error pushing to Appwrite:', error);
+            let userMessage = error.message || 'Unknown error';
+
+            if (error.code === 404 && userMessage.includes('bucket')) {
+                userMessage = '⚠️ نظام التخزين (Bucket) غير موجود. تم فتح "دليل الإصلاح" بالأسفل.';
+                setShowRepairGuide(true);
+            } else if (error.code === 401 || error.code === 403) {
+                userMessage = '⚠️ مشكلة في الصلاحيات. يرجى تفعيل Permissions الـ Create لكل من الـ Database والـ Storage.';
+            }
+
             return {
                 success: false,
-                message: error.message || 'Unknown error',
+                message: userMessage,
                 code: error.code
             };
         }
@@ -304,6 +314,50 @@ export default function AdminDashboard() {
                                     )}
                                 </div>
                             </div>
+
+                            {showRepairGuide && (
+                                <div className="mt-8 p-8 bg-red-500/10 border-2 border-red-500/30 rounded-[2.5rem] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center text-white text-2xl animate-pulse">⚠️</div>
+                                        <div>
+                                            <h3 className="text-xl font-black text-white">تحذير: نظام الصور غير مفعل</h3>
+                                            <p className="text-white/60 text-sm">يجب إنشاء مخزن (Bucket) في Appwrite لتفعيل الجودة العالية.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
+                                            <p className="text-[#a855f7] font-bold mb-2">الخطوة 1: افتح الرابط التالي</p>
+                                            <a
+                                                href={`https://cloud.appwrite.io/console/project-${client.config.project}/storage`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-400 hover:text-blue-300 break-all text-sm underline font-mono"
+                                            >
+                                                https://cloud.appwrite.io/console/project-{client.config.project}/storage
+                                            </a>
+                                        </div>
+
+                                        <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
+                                            <p className="text-[#eab308] font-bold mb-2">الخطوة 2: أنشئ الـ Bucket</p>
+                                            <ul className="text-white/70 text-sm space-y-2 list-disc list-inside">
+                                                <li>اضغط على <span className="text-white font-bold">Create Bucket</span></li>
+                                                <li>في الـ ID اكتب بالظبط: <span className="bg-white/10 px-2 py-0.5 rounded font-mono text-white">products</span></li>
+                                                <li>ادخل على <span className="text-white font-bold">Settings</span> بعد الإنشاء</li>
+                                                <li>عند <span className="text-white font-bold">Permissions</span> ضيف Role باسم <span className="text-white font-bold">Any</span></li>
+                                                <li>فعل <span className="text-white font-bold">Create</span> و <span className="text-white font-bold">Read</span></li>
+                                            </ul>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setShowRepairGuide(false)}
+                                            className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/40 text-xs rounded-xl font-bold transition-colors"
+                                        >
+                                            خفاء الدليل ومحاولة أخرى
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <button
                                 disabled={loading || !manualProduct.name || !manualProduct.price}
