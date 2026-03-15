@@ -9,8 +9,9 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showRepairGuide, setShowRepairGuide] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
     const [password, setPassword] = useState('');
+    const [taagerKey, setTaagerKey] = useState('');
+    const [showTaagerSettings, setShowTaagerSettings] = useState(false);
 
     const handleRunDiagnostics = async () => {
         setLoading(true);
@@ -215,7 +216,7 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
-                            <span className="text-xs text-white/20 ml-2">v10.0 (Edit Power)</span>
+                            <span className="text-xs text-white/20 ml-2">v11.0 (Integration Power)</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
@@ -280,7 +281,45 @@ export default function AdminDashboard() {
                             </svg>
                             خروج
                         </button>
+
+                        <button
+                            onClick={() => setShowTaagerSettings(!showTaagerSettings)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#eab308]/10 border border-[#eab308]/20 text-[#eab308] text-sm font-bold hover:bg-[#eab308]/20 transition-all"
+                        >
+                            📦 Taager Integration
+                        </button>
                     </div>
+
+                    {showTaagerSettings && (
+                        <div className="bg-black/40 border-2 border-dashed border-[#eab308]/30 rounded-[2rem] p-8 animate-in zoom-in-95 duration-300">
+                            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
+                                <span className="p-2 bg-[#eab308]/20 rounded-xl">🔌</span>
+                                Taager.com Settings
+                            </h3>
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <input
+                                    type="text"
+                                    value={taagerKey}
+                                    onChange={(e) => setTaagerKey(e.target.value)}
+                                    placeholder="Enter your TK- API Key..."
+                                    className="flex-1 search-input rounded-2xl px-6 py-4 text-white/90 placeholder-white/20"
+                                />
+                                <button
+                                    onClick={() => {
+                                        localStorage.setItem('taager_api_key', taagerKey);
+                                        addLog('✅ Taager API Key saved locally.');
+                                        alert('تم حفظ المفتاح بنجاح (محلياً)!');
+                                    }}
+                                    className="px-8 py-4 bg-[#eab308] text-black font-black rounded-2xl hover:bg-[#facc15] transition-all active:scale-95"
+                                >
+                                    Save Key
+                                </button>
+                            </div>
+                            <p className="mt-4 text-white/40 text-xs italic">
+                                * المفتاح ده هو المسئول عن سحب المنتجات وأوامر الشحن من منصة تاجر لمتجرك آلياً.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-10">
