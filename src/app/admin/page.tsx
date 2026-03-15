@@ -186,18 +186,42 @@ export default function AdminDashboard() {
                             <div className="space-y-4">
                                 <label className="block text-xs font-black text-[#a855f7] uppercase tracking-[0.2em]">صور المنتج (اضغط هنا ثم اعمل Paste للصورة)</label>
                                 <div
-                                    onPaste={(e) => {
+                                    onPaste={async (e) => {
                                         const items = e.clipboardData.items;
                                         for (let i = 0; i < items.length; i++) {
                                             if (items[i].type.indexOf('image') !== -1) {
                                                 const blob = items[i].getAsFile();
                                                 if (blob) {
                                                     const reader = new FileReader();
-                                                    reader.onload = (event) => {
+                                                    reader.onload = async (event) => {
                                                         const base64 = event.target?.result as string;
+
+                                                        // Compress image before adding
+                                                        const compressed = await new Promise<string>((resolve) => {
+                                                            const img = new window.Image();
+                                                            img.src = base64;
+                                                            img.onload = () => {
+                                                                const canvas = document.createElement('canvas');
+                                                                const MAX_WIDTH = 400; // Small size to fit Appwrite limits
+                                                                let width = img.width;
+                                                                let height = img.height;
+
+                                                                if (width > MAX_WIDTH) {
+                                                                    height = (height * MAX_WIDTH) / width;
+                                                                    width = MAX_WIDTH;
+                                                                }
+
+                                                                canvas.width = width;
+                                                                canvas.height = height;
+                                                                const ctx = canvas.getContext('2d');
+                                                                ctx?.drawImage(img, 0, 0, width, height);
+                                                                resolve(canvas.toDataURL('image/jpeg', 0.5)); // Low quality for max compression
+                                                            };
+                                                        });
+
                                                         setManualProduct(prev => ({
                                                             ...prev,
-                                                            images: [...prev.images, base64]
+                                                            images: [...prev.images, compressed]
                                                         }));
                                                     };
                                                     reader.readAsDataURL(blob);
