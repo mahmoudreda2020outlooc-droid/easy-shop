@@ -132,7 +132,7 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tighter">
                             <span className="text-[#eab308]">EASY</span>
                             <span className="text-[#a855f7] ml-3 lowercase text-glow-purple">dashboard</span>
-                            <span className="text-xs text-white/20 ml-2">v3.0</span>
+                            <span className="text-xs text-white/20 ml-2">v4.0</span>
                         </h1>
                         <p className="text-white/40 text-sm md:text-lg">Manage your curated product collection.</p>
                     </div>
@@ -193,60 +193,56 @@ export default function AdminDashboard() {
                             try {
                                 const uploadedUrls: string[] = [];
 
-                                // Check if environment variables are missing
-                                if (!BUCKET_ID || BUCKET_ID === '') {
-                                    throw new Error('متغيرات البيئة للرفع (Environment Variables) غير موجودة في Vercel. يرجى إضافتها يدوياً.');
-                                }
+                                try {
+                                    const uploadedUrls: string[] = [];
 
-                                // Direct Client-to-Appwrite Upload (Bypasses Vercel Limits)
-                                for (let i = 0; i < manualProduct.images.length; i++) {
-                                    const img = manualProduct.images[i];
-                                    if (img instanceof File) {
-                                        // 1. Compress
-                                        const optimized = await optimizeImage(img);
-                                        // 2. Direct Upload to Appwrite Storage
-                                        try {
-                                            const file = await storage.createFile(
-                                                BUCKET_ID,
-                                                ID.unique(),
-                                                optimized
-                                            );
-                                            const url = `${client.config.endpoint}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${client.config.project}`;
-                                            uploadedUrls.push(url);
-                                        } catch (uploadErr: any) {
-                                            console.error('Appwrite direct upload failed:', uploadErr);
-                                            throw new Error(`فشل الرفع لـ Appwrite: ${uploadErr.message}. تأكد من صلاحيات الـ Bucket (Role: Any -> Create, Read)`);
+                                    // Sequential upload through Server Action (Bypasses Client-side Env limits)
+                                    for (let i = 0; i < manualProduct.images.length; i++) {
+                                        const img = manualProduct.images[i];
+                                        if (img instanceof File) {
+                                            // 1. Compress (Client-side to keep the request small for Vercel)
+                                            const optimized = await optimizeImage(img);
+
+                                            // 2. Upload one-by-one via Server Action
+                                            const formData = new FormData();
+                                            formData.append('file', optimized);
+
+                                            const uploadResult = await uploadImageAction(formData);
+                                            if (uploadResult.success && uploadResult.url) {
+                                                uploadedUrls.push(uploadResult.url);
+                                            } else {
+                                                throw new Error(`فشل رفع إحدى الصور. تأكد من إعدادات الموقع.`);
+                                            }
+                                        } else {
+                                            uploadedUrls.push(img);
                                         }
-                                    } else {
-                                        uploadedUrls.push(img);
                                     }
+
+                                    const productData = {
+                                        name: manualProduct.name,
+                                        price: parseInt(manualProduct.price) || 0,
+                                        description: manualProduct.description,
+                                        rating: parseFloat(manualProduct.rating) || 5,
+                                        image: uploadedUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
+                                        images: uploadedUrls.length > 0 ? uploadedUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
+                                    };
+
+                                    const result = await addProduct(productData, uploadedUrls);
+
+                                    if (result.success) {
+                                        localStorage.removeItem('easy_shop_products');
+                                        setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
+                                        alert('✅ تم إضافة المنتج بنجاح (v4.0)!');
+                                    } else {
+                                        alert(`❌ فشل في إضافة المنتج للبيانات.`);
+                                    }
+                                } catch (err: any) {
+                                    console.error('Full Error info:', err);
+                                    alert(`🚨 خطأ تقني: ${err.message || 'حدث خطأ غير متوقع'}`);
+                                } finally {
+                                    setLoading(false);
                                 }
-
-                                const productData = {
-                                    name: manualProduct.name,
-                                    price: parseInt(manualProduct.price) || 0,
-                                    description: manualProduct.description,
-                                    rating: parseFloat(manualProduct.rating) || 5,
-                                    image: uploadedUrls[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop',
-                                    images: uploadedUrls.length > 0 ? uploadedUrls : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop']
-                                };
-
-                                const result = await addProduct(productData, uploadedUrls);
-
-                                if (result.success) {
-                                    localStorage.removeItem('easy_shop_products');
-                                    setManualProduct({ name: '', price: '', description: '', rating: '5', images: [] });
-                                    alert('✅ تم إضافة المنتج بنجاح (v3.0)!');
-                                } else {
-                                    alert(`❌ فشل في إضافة المنتج للبيانات.`);
-                                }
-                            } catch (err: any) {
-                                console.error('Full Error info:', err);
-                                alert(`🚨 خطأ تقني محدد: ${err.message || 'حدث خطأ غير متوقع'}`);
-                            } finally {
-                                setLoading(false);
-                            }
-                        }} className="space-y-10">
+                            }} className="space-y-10">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-8">
                                 <div className="space-y-4">
                                     <label className="block text-xs font-black text-[#3b82f6] uppercase tracking-[0.2em]">اسم المنتج</label>
