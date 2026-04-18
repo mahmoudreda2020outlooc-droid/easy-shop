@@ -384,7 +384,7 @@ export default function AdminDashboard() {
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-white font-bold text-sm truncate">{p.name}</p>
-                                                    <p className="text-[#eab308] font-black">${p.price}</p>
+                                                    <p className="text-[#eab308] font-black">{p.price} ج.م</p>
                                                 </div>
                                                 <button
                                                     onClick={() => handleImportTaagerProduct(p)}
@@ -739,7 +739,7 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h3 className="text-white font-bold truncate">{product.name}</h3>
-                                            <p className="text-[#eab308] font-black">${product.price}</p>
+                                            <p className="text-[#eab308] font-black">{product.price} ج.م</p>
                                             <div className="flex gap-2 mt-3">
                                                 <button
                                                     onClick={() => handleEditProduct(product)}
